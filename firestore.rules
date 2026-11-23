@@ -1,0 +1,235 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Primitive Helpers ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(ownerUid) {
+      return isSignedIn() && request.auth.uid == ownerUid;
+    }
+
+    // --- Entity Validation Blueprints ---
+    function isValidUserProfile(data, pathUid) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'role', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'displayName', 'photoURL', 'role', 'createdAt', 'updatedAt'])
+        && data.uid is string && data.uid == pathUid && isValidId(data.uid)
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 254
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 120
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500))
+        && data.role is string && data.role == 'student'
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidStudyTask(data) {
+      return data.keys().hasAll(['userId', 'title', 'subject', 'deadline', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'title', 'subject', 'deadline', 'status', 'notes', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId == request.auth.uid && isValidId(data.userId)
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 200
+        && data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 60
+        && data.deadline is string && data.deadline.size() <= 20
+        && data.status is string && (data.status == 'pending' || data.status == 'completed')
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 500))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidThinkEntry(data) {
+      return data.keys().hasAll(['userId', 'subject', 'question', 'initialThinking', 'confidence', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'subject', 'question', 'initialThinking', 'confidence', 'aiHint', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId == request.auth.uid && isValidId(data.userId)
+        && data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 60
+        && data.question is string && data.question.size() >= 1 && data.question.size() <= 2000
+        && data.initialThinking is string && data.initialThinking.size() >= 1 && data.initialThinking.size() <= 4000
+        && data.confidence is string && (
+          data.confidence == 'Rất tự tin' ||
+          data.confidence == 'Tương đối tự tin' ||
+          data.confidence == 'Chưa chắc chắn' ||
+          data.confidence == 'Chưa biết cách giải quyết'
+        )
+        && (!('aiHint' in data) || (data.aiHint is string && data.aiHint.size() <= 8000))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidFactCheck(data) {
+      return data.keys().hasAll(['userId', 'claim', 'source', 'reliability', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'claim', 'source', 'verdict', 'reliability', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId == request.auth.uid && isValidId(data.userId)
+        && data.claim is string && data.claim.size() >= 1 && data.claim.size() <= 2000
+        && data.source is string && data.source.size() <= 500
+        && (!('verdict' in data) || (data.verdict is string && data.verdict.size() <= 8000))
+        && data.reliability is string && (
+          data.reliability == 'pending' ||
+          data.reliability == 'verified' ||
+          data.reliability == 'needs_review' ||
+          data.reliability == 'inaccurate'
+        )
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSelfTest(data) {
+      return data.keys().hasAll(['userId', 'topic', 'subject', 'ownExplanation', 'application', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'topic', 'subject', 'ownExplanation', 'application', 'aiFeedback', 'createdAt', 'updatedAt'])
+        && data.userId is string && data.userId == request.auth.uid && isValidId(data.userId)
+        && data.topic is string && data.topic.size() >= 1 && data.topic.size() <= 200
+        && data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 60
+        && data.ownExplanation is string && data.ownExplanation.size() >= 1 && data.ownExplanation.size() <= 4000
+        && data.application is string && data.application.size() >= 1 && data.application.size() <= 4000
+        && (!('aiFeedback' in data) || (data.aiFeedback is string && data.aiFeedback.size() <= 8000))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSurvey(data) {
+      return data.keys().hasAll(['userId', 'scores', 'averageScore', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'scores', 'averageScore', 'reflection', 'createdAt'])
+        && data.userId is string && data.userId == request.auth.uid && isValidId(data.userId)
+        && data.scores is list && data.scores.size() == 5
+        && data.scores[0] is int && data.scores[0] >= 1 && data.scores[0] <= 5
+        && data.scores[1] is int && data.scores[1] >= 1 && data.scores[1] <= 5
+        && data.scores[2] is int && data.scores[2] >= 1 && data.scores[2] <= 5
+        && data.scores[3] is int && data.scores[3] >= 1 && data.scores[3] <= 5
+        && data.scores[4] is int && data.scores[4] >= 1 && data.scores[4] <= 5
+        && (data.averageScore is int || data.averageScore is float)
+        && data.averageScore >= 1 && data.averageScore <= 5
+        && (!('reflection' in data) || (data.reflection is string && data.reflection.size() <= 1000))
+        && data.createdAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().role == existing().role
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'email', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    match /studyTasks/{taskId} {
+      allow get: if isValidId(taskId) && isOwner(existing().userId);
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isValidId(taskId)
+        && isSignedIn()
+        && isValidStudyTask(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(taskId)
+        && isOwner(existing().userId)
+        && isValidStudyTask(incoming())
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'subject', 'deadline', 'notes', 'status', 'updatedAt'])
+        );
+      allow delete: if isValidId(taskId) && isOwner(existing().userId);
+    }
+
+    match /thinkEntries/{entryId} {
+      allow get: if isValidId(entryId) && isOwner(existing().userId);
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isValidId(entryId)
+        && isSignedIn()
+        && isValidThinkEntry(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(entryId)
+        && isOwner(existing().userId)
+        && isValidThinkEntry(incoming())
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['aiHint', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['subject', 'question', 'initialThinking', 'confidence', 'aiHint', 'updatedAt'])
+        );
+      allow delete: if isValidId(entryId) && isOwner(existing().userId);
+    }
+
+    match /factChecks/{checkId} {
+      allow get: if isValidId(checkId) && isOwner(existing().userId);
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isValidId(checkId)
+        && isSignedIn()
+        && isValidFactCheck(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(checkId)
+        && isOwner(existing().userId)
+        && isValidFactCheck(incoming())
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['verdict', 'reliability', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['claim', 'source', 'verdict', 'reliability', 'updatedAt'])
+        );
+      allow delete: if isValidId(checkId) && isOwner(existing().userId);
+    }
+
+    match /selfTests/{testId} {
+      allow get: if isValidId(testId) && isOwner(existing().userId);
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isValidId(testId)
+        && isSignedIn()
+        && isValidSelfTest(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(testId)
+        && isOwner(existing().userId)
+        && isValidSelfTest(incoming())
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['aiFeedback', 'updatedAt']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['topic', 'subject', 'ownExplanation', 'application', 'aiFeedback', 'updatedAt'])
+        );
+      allow delete: if isValidId(testId) && isOwner(existing().userId);
+    }
+
+    match /surveys/{surveyId} {
+      allow get: if isValidId(surveyId) && isOwner(existing().userId);
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isValidId(surveyId)
+        && isSignedIn()
+        && isValidSurvey(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isValidId(surveyId) && isOwner(existing().userId);
+    }
+  }
+}

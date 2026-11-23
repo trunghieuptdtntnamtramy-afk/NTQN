@@ -1,0 +1,284 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Student or teacher profile authenticated via Google Sign-In.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Verified Google email address.",
+          "minLength": 3,
+          "maxLength": 254
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Student full name.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Profile avatar URL.",
+          "maxLength": 500
+        },
+        "role": {
+          "type": "string",
+          "enum": ["student"],
+          "description": "Assigned role (strictly student on self-registration)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "displayName", "role", "createdAt", "updatedAt"]
+    },
+    "StudyTask": {
+      "title": "StudyTask",
+      "description": "Personal study plan task managed by a student.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "deadline": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "completed"]
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "title", "subject", "deadline", "status", "createdAt", "updatedAt"]
+    },
+    "ThinkEntry": {
+      "title": "ThinkEntry",
+      "description": "Think First initial reasoning record before consulting AI Coach.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "initialThinking": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "Rất tự tin",
+            "Tương đối tự tin",
+            "Chưa chắc chắn",
+            "Chưa biết cách giải quyết"
+          ]
+        },
+        "aiHint": {
+          "type": "string",
+          "maxLength": 8000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "subject", "question", "initialThinking", "confidence", "createdAt", "updatedAt"]
+    },
+    "FactCheckEntry": {
+      "title": "FactCheckEntry",
+      "description": "Fact check claim and verification record.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "claim": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "verdict": {
+          "type": "string",
+          "maxLength": 8000
+        },
+        "reliability": {
+          "type": "string",
+          "enum": ["pending", "verified", "needs_review", "inaccurate"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "claim", "source", "reliability", "createdAt", "updatedAt"]
+    },
+    "SelfTestEntry": {
+      "title": "SelfTestEntry",
+      "description": "Self-assessment explanation and practical application entry.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "topic": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "ownExplanation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "application": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "aiFeedback": {
+          "type": "string",
+          "maxLength": 8000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "topic", "subject", "ownExplanation", "application", "createdAt", "updatedAt"]
+    },
+    "SurveyResponse": {
+      "title": "SurveyResponse",
+      "description": "Study habit self-survey response.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "scores": {
+          "type": "array",
+          "description": "Five Likert ratings from 1 to 5."
+        },
+        "averageScore": {
+          "type": "number"
+        },
+        "reflection": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "scores", "averageScore", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user profile documents strictly owned by the authenticated user."
+    },
+    "/studyTasks/{taskId}": {
+      "schema": { "$ref": "#/entities/StudyTask" },
+      "description": "Student study plan tasks."
+    },
+    "/thinkEntries/{entryId}": {
+      "schema": { "$ref": "#/entities/ThinkEntry" },
+      "description": "Think First initial reasoning entries."
+    },
+    "/factChecks/{checkId}": {
+      "schema": { "$ref": "#/entities/FactCheckEntry" },
+      "description": "Fact Check verification records."
+    },
+    "/selfTests/{testId}": {
+      "schema": { "$ref": "#/entities/SelfTestEntry" },
+      "description": "Self Test mastery reflections."
+    },
+    "/surveys/{surveyId}": {
+      "schema": { "$ref": "#/entities/SurveyResponse" },
+      "description": "Student self-learning habit survey submissions."
+    }
+  }
+}

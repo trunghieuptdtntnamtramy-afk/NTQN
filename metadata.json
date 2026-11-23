@@ -1,0 +1,6 @@
+{
+  "name": "EDU SMART - Học tập thông minh",
+  "description": "Nền tảng tự học thông minh, phát triển tư duy độc lập và ứng dụng AI có trách nhiệm cho học sinh Trường PTDTNT THPT Quảng Nam.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
